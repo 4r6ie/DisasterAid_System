@@ -12,7 +12,7 @@ Every source file in the repository, one note each, linked by imports and shared
 
 | Hub | Contents |
 | --- | --- |
-| [[docs/code/backend]] | 141 PHP classes under `backend/app/` |
+| [[docs/code/backend]] | 142 PHP classes under `backend/app/` |
 | [[docs/code/frontend]] | 41 TypeScript/TSX modules under `frontend/src/` |
 | [[docs/code/infrastructure]] | Docker images and server configuration |
 

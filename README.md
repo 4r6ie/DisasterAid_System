@@ -9,51 +9,78 @@ response agencies a single place to record disasters, triage emergency
 reports, coordinate responders and volunteers, run evacuation centres, manage
 relief inventory and publish public advisories.
 
-The repository is a monorepo containing two applications plus their
-infrastructure and documentation:
+The project is a monorepo:
 
-- **`backend/`** — a Laravel 13 JSON API (Sanctum token authentication, Spatie
-  roles & permissions, activity logging).
-- **`frontend/`** — a React 18 + TypeScript single-page application (Vite,
-  Tailwind CSS, Axios data layer, Zustand, Recharts and Leaflet).
-- **`infrastructure/`** — Docker images and server configuration.
-- **`docs/`** — the documentation notes indexed below.
+| Directory | Contents |
+| --- | --- |
+| `backend/` | Laravel 13 JSON API — Sanctum authentication, Spatie roles and permissions, activity logging |
+| `frontend/` | React 18 + TypeScript SPA — Vite, Tailwind CSS, Axios, Zustand, Recharts, Leaflet |
+| `infrastructure/` | Docker images, compose stack and tooling |
+| `docs/` | Architecture, database, API, setup, testing and operations documentation |
 
----
+> **The repository is public.** It is not production-ready as shipped: set
+> `APP_KEY`, change every credential and disable debug mode before exposing it
+> to a network. See [Security](#security).
 
 ## Documentation
 
-| Note | Covers |
+| Document | Contents |
 | --- | --- |
-| [[Code Map]] | **Code map** — one note per source file, with its functions |
-| [[docs/setup/installation]] | Prerequisites, install, migrate, seed, run locally |
-| [[docs/setup/configuration]] | Every environment variable and config file |
-| [[docs/architecture/overview]] | Layering, request lifecycle, authentication, frontend organization |
-| [[docs/database/schema]] | Tables, relationships, conventions, seeders |
-| [[docs/api/endpoints]] | Complete API reference — endpoints, bodies, permissions |
-| [[docs/development/testing]] | Backend and frontend checks, expected results |
-| [[docs/operations/docker]] | Docker Compose operations and troubleshooting |
+| [Code map](docs/code/Code%20Map.md) | One note per source file, generated from the code |
+| [Installation](docs/setup/installation.md) | Prerequisites, install, migrate, seed, run |
+| [Configuration](docs/setup/configuration.md) | Every environment variable and config file |
+| [Architecture](docs/architecture/overview.md) | Layering, request lifecycle, authorisation |
+| [Database](docs/database/schema.md) | Tables, relationships, conventions |
+| [API reference](docs/api/endpoints.md) | Endpoints, request bodies, permissions, workflows |
+| [Testing](docs/development/testing.md) | Backend and frontend checks |
+| [Docker operations](docs/operations/docker.md) | Compose commands and troubleshooting |
 
----
+## Features
 
-## Quick start
+| Module | Capabilities |
+| --- | --- |
+| Dashboard | KPI cards, 30-day incident trends, severity and type charts, incident map |
+| Disaster incidents | CRUD, severity and status workflow, casualty counts, responder assignment, nearby lookup |
+| Emergency reports | CRUD, priority and status workflow, responder assignment, nearby lookup |
+| Assistance requests | CRUD, approve / dispatch / complete / reject workflow, requester tracking |
+| Evacuation centres | CRUD, capacity and occupancy, nearby lookup |
+| Relief inventory | CRUD, stock in / stock out / distribute, low-stock and expiry tracking |
+| Responders | CRUD, specialization and availability status |
+| Volunteers | CRUD, skills and availability status |
+| Volunteer assignments | Assign volunteers to incidents with a role and status |
+| Affected persons | Registration, condition tracking, evacuation-centre assignment |
+| Announcements | Publish advisories to a selected audience |
+| Audit logs | Read-only activity trail with filtering |
 
-With Docker (recommended):
+## Requirements
+
+| Requirement | Version |
+| --- | --- |
+| PHP | 8.4+ with `pdo_pgsql`, `mbstring`, `gd`, `intl`, `zip`, `bcmath` |
+| Composer | 2.x |
+| Node.js | 20+ |
+| PostgreSQL | 14+ (16 recommended) |
+
+A container runtime is sufficient if you would rather not install PHP or Node
+locally.
+
+## Getting started
+
+### Docker
 
 ```bash
 docker compose up -d --build
 docker compose exec backend php artisan migrate --seed
 ```
 
-Then open http://localhost:5173 and sign in as `admin@disasteraid.test` /
-`password`. See [[docs/operations/docker]] for details.
+Open http://localhost:5173 and sign in with the super administrator account
+configured through `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`.
 
-Without Docker:
+### Local
 
 ```bash
 cd backend
 composer install
-cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 
@@ -62,31 +89,84 @@ npm install
 npm run dev
 ```
 
-See [[docs/setup/installation]] for the full walkthrough and troubleshooting.
+The API is served from http://localhost:8000 and the UI from
+http://localhost:5173.
 
----
+## Configuration
 
-## Feature overview
+The application reads `backend/.env`; Docker Compose reads `.env` at the
+repository root. Neither file is committed — both are created per machine,
+and the full variable list lives in
+[docs/setup/configuration.md](docs/setup/configuration.md).
 
-| Module | Capabilities |
+| Variable | Where | Description |
+| --- | --- | --- |
+| `APP_KEY` | backend | Generated with `php artisan key:generate` |
+| `APP_ENV` / `APP_DEBUG` | backend | `production` / `false` when deployed |
+| `DB_*` | backend | PostgreSQL connection |
+| `CACHE_STORE` | backend | Must be `file` |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | backend | Super administrator account |
+| `SEED_DEMO_USERS` / `DEMO_PASSWORD` | backend | Opt-in demo accounts |
+| `CORS_ALLOWED_ORIGINS` | backend | Allowed browser origins; empty blocks all |
+| `APP_PORT` / `DB_PORT` | root | Host ports used by Compose |
+
+## API
+
+A stateless JSON interface under `/api`, authenticated with Sanctum bearer
+tokens. Every endpoint is permission-gated; the full reference — endpoints,
+request bodies, validation rules, permissions and workflows — is in
+[docs/api/endpoints.md](docs/api/endpoints.md).
+
+## Security
+
+- **Authentication** — Sanctum personal access tokens. Every route except
+  registration, login and password reset requires `auth:sanctum`.
+- **Authorisation** — permission-based. Controllers call `$this->authorize()`;
+  policies map each ability to one of 54 permissions held by five roles.
+- **Input validation** — every write goes through a form request; `per_page`
+  is clamped to 100.
+- **Error handling** — failures return a consistent envelope; stack traces are
+  only exposed when `APP_DEBUG=true`.
+- **Headers** — the `SecurityHeaders` middleware sets `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Resource-Policy`, a
+  restrictive `Content-Security-Policy`, and HSTS over HTTPS.
+- **Rate limiting** — 60 requests per minute per IP on the API group.
+- **Passwords** — bcrypt. Reset tokens are stored server-side and expire.
+- **Audit trail** — `spatie/laravel-activitylog` on the core models.
+
+### Credential rules
+
+| Variable | Rule |
 | --- | --- |
-| Dashboard | KPI cards, 30-day incident trends, severity/type charts, incident map |
-| Disaster incidents | CRUD, severity & status workflow, casualty counts, responder assignment, nearby lookup |
-| Emergency reports | CRUD, priority & status workflow, responder assignment, nearby lookup |
-| Assistance requests | CRUD, approve / dispatch / complete / reject workflow, requester tracking |
-| Evacuation centres | CRUD, capacity & occupancy, nearby lookup |
-| Relief inventory | CRUD, stock in / stock out / distribute, low-stock and expiry tracking |
-| Responders | CRUD, specialization and availability status |
-| Volunteers | CRUD, skills and availability status |
-| Volunteer assignments | Assign volunteers to incidents with a role and status |
-| Affected persons | Registration, condition tracking, evacuation-centre assignment |
-| Announcements | Publish advisories to a chosen audience |
-| Audit logs | Read-only activity trail with filtering |
+| `backend/.env` | Never committed |
+| `APP_KEY` | Generated locally; never committed |
+| `ADMIN_PASSWORD` | Required in production — the seeder refuses to run without it |
+| `DEMO_PASSWORD` | Required when `SEED_DEMO_USERS=true`; no default |
+| Demo accounts | Never created in production |
+| `APP_DEBUG` | `false` anywhere public |
 
-Every endpoint is permission-gated. The permission names enforced by the API
-are exactly the ones granted by `backend/database/seeders/RolesAndPermissionsSeeder.php`.
+### Deployment checklist
 
----
+- [ ] `APP_ENV=production` and `APP_DEBUG=false`
+- [ ] `APP_KEY` generated and stored securely
+- [ ] `ADMIN_PASSWORD` and `DB_PASSWORD` changed
+- [ ] `SEED_DEMO_USERS=false`
+- [ ] `CORS_ALLOWED_ORIGINS` restricted to the frontend origin
+- [ ] Served over HTTPS
+- [ ] PostgreSQL not exposed to the internet
+- [ ] `storage/` and `bootstrap/cache/` not web-accessible
+- [ ] Database and `APP_KEY` backed up
+
+## Testing
+
+```bash
+cd backend && php artisan test                                  # 33 tests, 99 assertions
+cd frontend && npm run lint && npx tsc --noEmit && npm run build
+```
+
+`RolesAndPermissionsTest` pins the permission catalogue and the exact
+permission set of every role. See
+[docs/development/testing.md](docs/development/testing.md).
 
 ## Project structure
 
@@ -94,23 +174,18 @@ are exactly the ones granted by `backend/database/seeders/RolesAndPermissionsSee
 DisasterAid_System/
 ├── backend/                     Laravel 13 JSON API
 │   ├── app/
-│   │   ├── Actions/             Single-action classes (reserved)
-│   │   ├── Enums/               Domain enumerations (reserved)
-│   │   ├── Events/              Domain events (reserved)
-│   │   ├── Exceptions/          Custom exceptions (reserved)
 │   │   ├── Http/
 │   │   │   ├── Controllers/Api/V1/  Controllers (authorise then delegate)
+│   │   │   ├── Middleware/         SecurityHeaders
 │   │   │   ├── Requests/        Form requests with validation rules
 │   │   │   └── Resources/       API resources (response shaping)
-│   │   ├── Jobs/                Queue jobs (reserved)
-│   │   ├── Listeners/           Event listeners (reserved)
 │   │   ├── Models/              Eloquent models
 │   │   ├── Policies/            Permission checks used by the controllers
 │   │   ├── Providers/           Service providers
 │   │   ├── Repositories/        Data access layer
 │   │   └── Services/            Business logic and workflows
 │   ├── bootstrap/app.php        Application configuration, middleware, API errors
-│   ├── config/                  Configuration files
+│   ├── config/                  Configuration files (including cors.php)
 │   ├── database/                Migrations, factories and seeders
 │   ├── routes/                  api.php, web.php, console.php
 │   ├── tests/                   Pest feature and unit tests
@@ -119,8 +194,7 @@ DisasterAid_System/
 │   └── router.php               Front-controller router for `php -S`
 ├── frontend/                    React 18 + TypeScript SPA
 │   ├── src/
-│   │   ├── components/ui/       Design system primitives
-│   │   ├── components/shared/   Reusable feature components
+│   │   ├── components/          Design-system primitives and shared components
 │   │   ├── hooks/               Data-fetching and authorization hooks
 │   │   ├── layouts/             Application shell
 │   │   ├── pages/               Route-level screens
@@ -135,7 +209,8 @@ DisasterAid_System/
 │   ├── docker/php/Dockerfile    PHP 8.4 CLI image (composer + pdo_pgsql)
 │   ├── docker/node/Dockerfile   Node 20 image for the Vite dev server
 │   ├── docker/nginx/            Nginx configuration
-│   └── docker/postgres/         PostgreSQL initialization
+│   ├── docker/postgres/         PostgreSQL initialization
+│   └── scripts/generate-code-map.py
 ├── docs/
 │   ├── code/                    Generated code map — one note per source file
 │   ├── setup/                   Installation and configuration
@@ -147,19 +222,6 @@ DisasterAid_System/
 ├── docker-compose.yml
 └── README.md
 ```
-
----
-
-## Security notes
-
-- Permissions are enforced in the controllers via `$this->authorize()`; the
-  policies in `app/Policies` map abilities to Spatie permissions.
-- `per_page` is clamped to 100 to bound query cost.
-- Passwords are hashed with bcrypt; tokens are Sanctum personal access tokens.
-- Audit logging is provided by `spatie/laravel-activitylog`.
-- Never commit `.env` — it is listed in `.gitignore`.
-
----
 
 ## License
 

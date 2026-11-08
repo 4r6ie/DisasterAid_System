@@ -67,9 +67,10 @@ instead of being sent. Configure `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `ADMIN_EMAIL` | `admin@disasteraid.test` | Used by `AdminUserSeeder` |
-| `ADMIN_PASSWORD` | `password` | Used by `AdminUserSeeder` |
-| `DEMO_PASSWORD` | `password` | Shared password for the four demo role accounts |
-| `SEED_DEMO_USERS` | `true` | Set `false` in production to skip the demo accounts |
+| `ADMIN_PASSWORD` | — (required in production) | Used by `AdminUserSeeder`; falls back to `password` locally |
+| `SEED_DEMO_USERS` | `false` | Set `true` locally to create the four demo accounts |
+| `DEMO_PASSWORD` | — (required when demo seeding) | Shared password for the demo accounts; no default |
+| `CORS_ALLOWED_ORIGINS` | — (empty blocks all) | Comma-separated browser origins allowed to call the API |
 
 ### Activity log
 

@@ -28,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Throttle authentication attempts.
         $middleware->throttleApi('60,1');
+
+        // Security headers on every response (see App\Http\Middleware\SecurityHeaders).
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(

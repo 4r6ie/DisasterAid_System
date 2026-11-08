@@ -35,13 +35,14 @@ cd frontend && npm install && cd ..
 
 ## 3. Create the environment file
 
-```bash
-cp backend/.env.example backend/.env
-```
+Create `backend/.env` and fill in the values listed in
+[[docs/setup/configuration]] — at minimum `APP_KEY`, the `DB_*` settings and
+`CACHE_STORE=file` (Laravel 11+ defaults the cache store to `database`, which
+has no table here).
 
-Point `DB_*` at your PostgreSQL server and set `CACHE_STORE=file`
-(Laravel 11+ defaults the cache store to `database`, which has no table here).
-See [[docs/setup/configuration]] for every variable.
+There is deliberately no `.env.example` in the repository: the file carries
+credentials, so it is created per machine rather than committed. The key is
+generated in the next step.
 
 ## 4. Generate the application key
 
@@ -96,22 +97,35 @@ The UI is served from `http://localhost:5173`. Vite proxies `/api` to
 
 ## Seeded accounts
 
-The seeder creates one account per role so every permission path can be
-exercised by hand.
+`AdminUserSeeder` always creates the super administrator from `ADMIN_EMAIL` /
+`ADMIN_PASSWORD`. In production `ADMIN_PASSWORD` must be set — the seeder
+refuses to run without it. Locally it falls back to `password`.
 
-| Email | Password | Role | Can |
-| --- | --- | --- | --- |
-| `admin@disasteraid.test` | `password` | `super_admin` | everything |
-| `officer@disasteraid.test` | `password` | `admin` | everything except user management |
-| `responder@disasteraid.test` | `password` | `responder` | dashboard, disasters, emergencies, assistance, evacuation, inventory, affected persons, announcements |
-| `volunteer@disasteraid.test` | `password` | `volunteer` | dashboard, disasters, assistance, evacuation, inventory, announcements |
-| `resident@disasteraid.test` | `password` | `user` | dashboard, disasters, assistance, announcements |
+`DemoUserSeeder` creates one account per remaining role so every permission
+path can be exercised by hand. It is opt-in:
 
-The super administrator uses `ADMIN_EMAIL` / `ADMIN_PASSWORD`; the four demo
-accounts use `DEMO_PASSWORD` and are skipped in production unless
-`SEED_DEMO_USERS=true`.
+```bash
+# backend/.env
+SEED_DEMO_USERS=true
+DEMO_PASSWORD=choose-a-password
+```
 
-Change every password immediately in any real deployment.
+```bash
+php artisan db:seed --force
+```
+
+`DEMO_PASSWORD` has no default — the seeder throws if it is missing. The demo
+accounts are never created in production, whatever the flags say.
+
+| Email | Role | Can |
+| --- | --- | --- |
+| `admin@disasteraid.test` | `super_admin` | everything |
+| `officer@disasteraid.test` | `admin` | everything except user management |
+| `responder@disasteraid.test` | `responder` | dashboard, disasters, emergencies, assistance, evacuation, inventory, affected persons, announcements |
+| `volunteer@disasteraid.test` | `volunteer` | dashboard, disasters, assistance, evacuation, inventory, announcements |
+| `resident@disasteraid.test` | `user` | dashboard, disasters, assistance, announcements |
+
+Change every password before deploying anywhere.
 
 ## Troubleshooting
 

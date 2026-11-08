@@ -36,6 +36,13 @@ services:
             DB_DATABASE: "${DB_DATABASE:-disasteraid}"
             DB_USERNAME: "${DB_USERNAME:-disasteraid}"
             DB_PASSWORD: "${DB_PASSWORD:-disasteraid}"
+            # Authentication seeding. ADMIN_PASSWORD is required in production;
+            # the demo accounts are opt-in and never seeded in production.
+            ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@disasteraid.test}"
+            ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+            SEED_DEMO_USERS: "${SEED_DEMO_USERS:-false}"
+            DEMO_PASSWORD: "${DEMO_PASSWORD:-}"
+            CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-}"
         depends_on:
             postgres:
                 condition: service_healthy

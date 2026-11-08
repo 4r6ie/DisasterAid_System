@@ -15,6 +15,7 @@ Extends `Seeder`.
 | Visibility | Method | Parameters | Returns |
 | --- | --- | --- | --- |
 | public | `run` | `` | `void` |
+| protected | `enabled` | `` | `bool` |
 
 ## References
 
