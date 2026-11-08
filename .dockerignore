@@ -1,0 +1,44 @@
+# Version control
+.git
+.github
+.idea
+.vscode
+.obsidian
+.freebuff
+
+# Dependencies
+node_modules
+vendor
+frontend/node_modules
+backend/vendor
+
+# Build output
+frontend/dist
+backend/public/build
+backend/public/storage
+
+# Runtime state
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/*.key
+
+# Environment
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Tooling caches
+.phpunit.cache
+.phpunit.result.cache
+node_modules/.vite
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db

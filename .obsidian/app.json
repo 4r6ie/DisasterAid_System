@@ -1,1 +1,10 @@
-{}
+{
+  "userIgnoreFilters": [
+    "/node_modules/",
+    "/backend/vendor/",
+    "/frontend/dist/",
+    ".git/",
+    ".obsidian/",
+    ".freebuff/"
+  ]
+}

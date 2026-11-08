@@ -1,0 +1,72 @@
+services:
+    postgres:
+        image: postgres:16-alpine
+        container_name: disasteraid-postgres
+        environment:
+            POSTGRES_DB: "${DB_DATABASE:-disasteraid}"
+            POSTGRES_USER: "${DB_USERNAME:-disasteraid}"
+            POSTGRES_PASSWORD: "${DB_PASSWORD:-disasteraid}"
+        ports:
+            - "${DB_PORT:-5432}:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-disasteraid} -d ${DB_DATABASE:-disasteraid}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - disasteraid
+
+    backend:
+        build:
+            context: .
+            dockerfile: infrastructure/docker/php/Dockerfile
+        container_name: disasteraid-backend
+        working_dir: /app
+        volumes:
+            - ./backend:/app
+        ports:
+            - "${APP_PORT:-8000}:8000"
+        command: ["php", "-S", "0.0.0.0:8000", "-t", "/app", "/app/router.php"]
+        environment:
+            DB_CONNECTION: pgsql
+            DB_HOST: postgres
+            DB_PORT: 5432
+            DB_DATABASE: "${DB_DATABASE:-disasteraid}"
+            DB_USERNAME: "${DB_USERNAME:-disasteraid}"
+            DB_PASSWORD: "${DB_PASSWORD:-disasteraid}"
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - disasteraid
+
+    frontend:
+        build:
+            context: .
+            dockerfile: infrastructure/docker/node/Dockerfile
+        container_name: disasteraid-frontend
+        working_dir: /app
+        volumes:
+            - ./frontend:/app
+            # Keep the container's own (Linux) node_modules; a host-installed
+            # tree would ship the wrong native binaries.
+            - frontend_node_modules:/app/node_modules
+        ports:
+            - "5173:5173"
+        environment:
+            # The Vite dev server proxies /api here; inside the container the
+            # backend is reached by its compose service name.
+            VITE_API_TARGET: "http://backend:8000"
+        command: npm run dev -- --host 0.0.0.0
+        networks:
+            - disasteraid
+
+networks:
+    disasteraid:
+        driver: bridge
+
+volumes:
+    postgres_data:
+    frontend_node_modules:
