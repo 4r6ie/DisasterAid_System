@@ -70,6 +70,37 @@ services:
         networks:
             - disasteraid
 
+    nginx:
+        image: nginx:1.27-alpine
+        container_name: disasteraid-nginx
+        ports:
+            - "${WEB_PORT:-80}:80"
+        volumes:
+            - ./infrastructure/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+        depends_on:
+            backend:
+                condition: service_started
+            frontend:
+                condition: service_started
+        networks:
+            - disasteraid
+
+    # Browser-based database admin (Adminer). Lets you browse the PostgreSQL
+    # schema and run queries without installing psql or a desktop client.
+    adminer:
+        image: adminer:4
+        container_name: disasteraid-adminer
+        ports:
+            - "${ADMINER_PORT:-8080}:8080"
+        environment:
+            ADMINER_DEFAULT_SERVER: postgres
+            ADMINER_DEFAULT_DB: "${DB_DATABASE:-disasteraid}"
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - disasteraid
+
 networks:
     disasteraid:
         driver: bridge

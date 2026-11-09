@@ -73,8 +73,13 @@ docker compose up -d --build
 docker compose exec backend php artisan migrate --seed
 ```
 
-Open http://localhost:5173 and sign in with the super administrator account
-configured through `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`.
+Open http://localhost (the nginx gateway serves the UI and proxies `/api` to
+the backend) or http://localhost:5173 directly. Sign in with the super
+administrator account configured through `ADMIN_EMAIL` and `ADMIN_PASSWORD`
+in `.env`.
+
+To browse the database, open http://localhost:8080 (Adminer) and log in with
+user `disasteraid` / password `disasteraid` / database `disasteraid`.
 
 ### Local
 
@@ -90,7 +95,9 @@ npm run dev
 ```
 
 The API is served from http://localhost:8000 and the UI from
-http://localhost:5173.
+http://localhost:5173. Both are also reachable through the nginx gateway at
+http://localhost, which proxies `/api` to the backend and everything else to
+the Vite dev server.
 
 ## Configuration
 
@@ -208,7 +215,7 @@ DisasterAid_System/
 ├── infrastructure/
 │   ├── docker/php/Dockerfile    PHP 8.4 CLI image (composer + pdo_pgsql)
 │   ├── docker/node/Dockerfile   Node 20 image for the Vite dev server
-│   ├── docker/nginx/            Nginx configuration
+│   ├── docker/nginx/            Nginx gateway (default.conf)
 │   ├── docker/postgres/         PostgreSQL initialization
 │   └── scripts/generate-code-map.py
 ├── docs/

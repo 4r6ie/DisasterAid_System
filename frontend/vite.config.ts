@@ -16,6 +16,13 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 5173,
+      // Docker Desktop on Windows does not forward inotify events from
+      // bind-mounted host directories, so the dev server would never see
+      // edits. Poll instead; it is cheap for a project this size.
+      watch: {
+        usePolling: true,
+        interval: 300,
+      },
       proxy: {
         '/api': {
           target: apiTarget,

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
 import { apiErrorMessage, validationErrors } from '@/services/http';
+import { normalizePhone } from '@/utils/phone';
 
 export function ProfilePage() {
   const { user, logout } = useAuthStore();
@@ -80,10 +81,21 @@ export function ProfilePage() {
               <Input value={user?.email ?? ''} disabled />
             </Field>
 
-            <Field label="Phone" error={profileErrors.phone?.[0]}>
+            <Field
+              label="Phone"
+              error={profileErrors.phone?.[0]}
+              hint="Exactly 11 digits, numbers only"
+            >
               <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
                 value={profile.phone}
-                onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
+                onChange={(event) =>
+                  setProfile((current) => ({ ...current, phone: normalizePhone(event.target.value) }))
+                }
+                placeholder="09171234567"
+                autoComplete="tel"
               />
             </Field>
 

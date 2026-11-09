@@ -9,6 +9,7 @@ use App\Http\Controllers\API\V1\DashboardController;
 use App\Http\Controllers\API\V1\DisasterIncidentController;
 use App\Http\Controllers\API\V1\EmergencyReportController;
 use App\Http\Controllers\API\V1\EvacuationCenterController;
+use App\Http\Controllers\API\V1\GeocodingController;
 use App\Http\Controllers\API\V1\ReliefItemController;
 use App\Http\Controllers\API\V1\ResponderController;
 use App\Http\Controllers\API\V1\VolunteerAssignmentController;
@@ -44,6 +45,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
         Route::put('profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
         Route::post('change-password', [AuthController::class, 'changePassword'])->name('auth.change-password');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Geocoding (address <-> coordinates, Nominatim)
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('geocoding')->group(function () {
+        Route::get('geocode', [GeocodingController::class, 'geocode'])->name('geocoding.geocode');
+        Route::get('reverse', [GeocodingController::class, 'reverse'])->name('geocoding.reverse');
     });
 
     /*

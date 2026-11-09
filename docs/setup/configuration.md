@@ -62,6 +62,42 @@ instead of being sent. Configure `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
 | `SANCTUM_STATEFUL_DOMAINS` | `localhost,localhost:5173` | Domains allowed to use session auth |
 | `SESSION_DOMAIN` | `localhost` | |
 
+### OAuth sign-in
+
+The "Continue with Google / Facebook" buttons are opt-in. When the client
+ID or secret for a provider is empty, that provider answers with
+`oauth_not_configured` and the login page shows a message instead of
+redirecting.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `GOOGLE_CLIENT_ID` | — | From the Google Cloud console |
+| `GOOGLE_CLIENT_SECRET` | — | From the Google Cloud console |
+| `GOOGLE_REDIRECT_URI` | `/oauth/google/callback` | Must match the Google console |
+| `FACEBOOK_CLIENT_ID` | — | From the Facebook app dashboard |
+| `FACEBOOK_CLIENT_SECRET` | — | From the Facebook app dashboard |
+| `FACEBOOK_REDIRECT_URI` | `/oauth/facebook/callback` | Must match the Facebook app |
+
+Create the OAuth apps with these redirect URIs (the gateway serves the API
+on the same origin as the SPA):
+
+```
+http://localhost/oauth/google/callback
+http://localhost/oauth/facebook/callback
+```
+
+For production, register `https://<your-domain>/oauth/<provider>/callback`
+and set the matching `*_REDIRECT_URI`. Facebook requires HTTPS; Google
+accepts `http://localhost` for local testing.
+
+### Geocoding
+
+Address ↔ coordinate lookups use OpenStreetMap's Nominatim, which is free
+and needs no key. Results are cached for 24 hours and calls are limited to
+one per second per the Nominatim usage policy. The endpoints are
+`GET /api/geocoding/geocode?address=…` and
+`GET /api/geocoding/reverse?latitude=…&longitude=…`.
+
 ### Seeding
 
 | Variable | Default | Notes |
@@ -82,7 +118,10 @@ instead of being sent. Configure `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
 
 | Variable | Default | Notes |
 | --- | --- | --- |
+| `WEB_PORT` | `80` | Host port for the nginx gateway |
+| `ADMINER_PORT` | `8080` | Host port for the Adminer database UI |
 | `APP_PORT` | `8000` | Host port for the API |
+| `FRONTEND_URL` | value of `APP_URL` | Where the SPA is served; used for reset links and OAuth callbacks |
 | `DB_PORT` | `5432` | Host port for PostgreSQL |
 | `DB_DATABASE` | `disasteraid` | Must match `backend/.env` |
 | `DB_USERNAME` | `disasteraid` | |

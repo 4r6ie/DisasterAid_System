@@ -12,6 +12,8 @@ import {
 import { Modal } from '@/components/shared/Modal';
 import { Column, DataTable } from '@/components/shared/DataTable';
 import { Pagination } from '@/components/shared/Pagination';
+import { FillAddressButton, FillCoordinatesButton } from '@/components/shared/GeoButtons';
+import { geocodingService } from '@/services/geocoding.service';
 import { usePaginated } from '@/hooks/usePaginated';
 import { useToast } from '@/hooks/useToast';
 import { apiErrorMessage, validationErrors } from '@/services/http';
@@ -184,6 +186,66 @@ export function ResourcePage<T>({ config }: { config: ResourceConfig<T> }) {
   const canEdit = config.canEdit ?? true;
   const canDelete = config.canDelete ?? true;
 
+  // Address <-> coordinates auto-fill. Only forms that carry all three
+  // fields participate, and a lookup never overwrites a field the user
+  // has already filled in.
+  const fieldNames = useMemo(() => new Set(config.fields.map((field) => field.name)), [config.fields]);
+  const canGeocode = fieldNames.has('address') && fieldNames.has('latitude') && fieldNames.has('longitude');
+
+  const addressValue = String(values.address ?? '');
+  const latitudeValue = String(values.latitude ?? '');
+  const longitudeValue = String(values.longitude ?? '');
+
+  const debouncedAddress = useDebounced(addressValue);
+  const debouncedLatitude = useDebounced(latitudeValue);
+  const debouncedLongitude = useDebounced(longitudeValue);
+
+  useEffect(() => {
+    if (!canGeocode || latitudeValue !== '' || longitudeValue !== '') return;
+    if (debouncedAddress.trim().length < 3) return;
+
+    let cancelled = false;
+
+    geocodingService
+      .geocode(debouncedAddress)
+      .then((result) => {
+        if (cancelled) return;
+        updateValue('latitude', result.latitude);
+        updateValue('longitude', result.longitude);
+      })
+      .catch(() => {
+        // Silent by design; the button surfaces a visible message instead.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedAddress, canGeocode, latitudeValue, longitudeValue, updateValue]);
+
+  useEffect(() => {
+    if (!canGeocode || addressValue !== '') return;
+    if (debouncedLatitude === '' || debouncedLongitude === '') return;
+
+    const lat = Number(debouncedLatitude);
+    const lng = Number(debouncedLongitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    let cancelled = false;
+
+    geocodingService
+      .reverse(lat, lng)
+      .then((address) => {
+        if (cancelled) return;
+        updateValue('address', address);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedLatitude, debouncedLongitude, canGeocode, addressValue, updateValue]);
+
   return (
     <div>
       <PageHeader
@@ -328,6 +390,24 @@ export function ResourcePage<T>({ config }: { config: ResourceConfig<T> }) {
                   />
                 )}
               </Field>
+
+              {canGeocode && field.name === 'address' && (
+                <FillCoordinatesButton
+                  address={addressValue}
+                  onResolved={(latitude, longitude) => {
+                    updateValue('latitude', latitude);
+                    updateValue('longitude', longitude);
+                  }}
+                />
+              )}
+
+              {canGeocode && field.name === 'longitude' && (
+                <FillAddressButton
+                  latitude={latitudeValue}
+                  longitude={longitudeValue}
+                  onResolved={(address) => updateValue('address', address)}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -368,4 +448,20 @@ export function ResourcePage<T>({ config }: { config: ResourceConfig<T> }) {
       </Modal>
     </div>
   );
+}
+
+/**
+ * Returns a copy of `value` that only updates after `delay` milliseconds
+ * without the value changing. Used to avoid geocoding on every keystroke.
+ */
+function useDebounced<T>(value: T, delay = 1200): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
 }

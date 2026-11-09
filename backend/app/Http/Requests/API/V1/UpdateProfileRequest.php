@@ -15,8 +15,16 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'name' => 'sometimes|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            // Exactly 11 digits, digits only. Optional, but validated when given.
+            'phone' => 'nullable|string|regex:/^[0-9]{11}$/',
             'address' => 'nullable|string',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'The contact number must be exactly 11 digits (numbers only).',
         ];
     }
 }

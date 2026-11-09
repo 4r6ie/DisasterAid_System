@@ -19,6 +19,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // This is an API-only application, so there is no `login` page to
+        // redirect guests to. Without this, the "auth" middleware falls back
+        // to route('login'), which does not exist — a non-JSON request to a
+        // protected endpoint throws RouteNotFoundException (HTTP 500) instead
+        // of returning the 401 envelope below.
+        $middleware->redirectGuestsTo(null);
+
         // Spatie permission middleware aliases.
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

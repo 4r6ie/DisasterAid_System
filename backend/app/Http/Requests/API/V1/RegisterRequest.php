@@ -17,8 +17,16 @@ class RegisterRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
+            // Exactly 11 digits, digits only. Optional, but validated when given.
+            'phone' => 'nullable|string|regex:/^[0-9]{11}$/',
             'address' => 'nullable|string',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'The contact number must be exactly 11 digits (numbers only).',
         ];
     }
 }

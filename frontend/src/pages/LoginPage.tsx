@@ -1,14 +1,22 @@
 import { FormEvent, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { Button, Field, Input } from '@/components/ui';
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiErrorMessage, validationErrors } from '@/services/http';
+
+const OAUTH_ERRORS: Record<string, string> = {
+  oauth_not_configured: 'That sign-in option is not configured yet. Please contact the administrator.',
+  oauth_authentication_failed: 'The sign-in was cancelled or failed. Please try again.',
+  oauth_email_not_shared: 'The provider did not share an email address, so we cannot sign you in.',
+};
 
 export function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [values, setValues] = useState({ email: '', password: '', remember: false });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -16,6 +24,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  const oauthError = OAUTH_ERRORS[searchParams.get('error') ?? ''] ?? null;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -47,8 +56,10 @@ export function LoginPage() {
 
         <div className="card px-6 py-6">
           <form onSubmit={submit} className="space-y-4" noValidate>
-            {formError && (
-              <p className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700">{formError}</p>
+            {(formError || oauthError) && (
+              <p className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700">
+                {formError ?? oauthError}
+              </p>
             )}
 
             <Field label="Email address" required error={errors.email?.[0]}>
@@ -71,19 +82,39 @@ export function LoginPage() {
               />
             </Field>
 
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={values.remember}
-                onChange={(event) => setValues((current) => ({ ...current, remember: event.target.checked }))}
-                className="h-4 w-4 rounded border-slate-300 text-primary-600"
-              />
-              Remember me
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={values.remember}
+                  onChange={(event) => setValues((current) => ({ ...current, remember: event.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600"
+                />
+                Remember me
+              </label>
+
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-primary-600 hover:text-primary-700"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
             <Button type="submit" loading={submitting} className="w-full">
               Sign in
             </Button>
+
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-slate-500">or continue with</span>
+              </div>
+            </div>
+
+            <SocialLoginButtons />
           </form>
         </div>
 
@@ -97,3 +128,4 @@ export function LoginPage() {
     </div>
   );
 }
+

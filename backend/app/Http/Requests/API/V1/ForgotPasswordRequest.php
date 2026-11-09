@@ -14,7 +14,10 @@ class ForgotPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email',
+            // Deliberately no `exists` rule: the endpoint must answer the
+            // same way whether or not the address is registered, otherwise
+            // it becomes a user-enumeration oracle.
+            'email' => 'required|email',
         ];
     }
 }

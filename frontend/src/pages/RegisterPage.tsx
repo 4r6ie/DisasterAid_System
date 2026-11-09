@@ -4,6 +4,7 @@ import { Activity } from 'lucide-react';
 import { Button, Field, Input, Textarea } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiErrorMessage, validationErrors } from '@/services/http';
+import { normalizePhone } from '@/utils/phone';
 
 export function RegisterPage() {
   const register = useAuthStore((state) => state.register);
@@ -78,11 +79,18 @@ export function RegisterPage() {
                 />
               </Field>
 
-              <Field label="Phone" error={errors.phone?.[0]}>
+              <Field
+                label="Phone"
+                error={errors.phone?.[0]}
+                hint="Exactly 11 digits, numbers only"
+              >
                 <Input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={11}
                   value={values.phone}
-                  onChange={(event) => update('phone', event.target.value)}
-                  placeholder="+63 900 000 0000"
+                  onChange={(event) => update('phone', normalizePhone(event.target.value))}
+                  placeholder="09171234567"
                   autoComplete="tel"
                 />
               </Field>

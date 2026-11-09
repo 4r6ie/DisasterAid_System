@@ -12,14 +12,14 @@ Related notes: [[Code Map]] · [[docs/operations/docker]] · [[docs/setup/config
 | --- | --- |
 | `infrastructure/docker/php/Dockerfile` | PHP 8.4 CLI + composer + pdo_pgsql, builds `backend/` |
 | `infrastructure/docker/node/Dockerfile` | Node 20 + `npm ci`, runs the Vite dev server |
-| `infrastructure/docker/nginx/` | Nginx configuration (placeholder) |
+| `infrastructure/docker/nginx/default.conf` | Nginx gateway — proxies `/` to the frontend and `/api` to the backend |
 | `infrastructure/docker/postgres/` | PostgreSQL initialization (placeholder) |
 
 ## Orchestration
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.yml` | postgres + backend + frontend on one network |
+| `docker-compose.yml` | postgres + backend + frontend + nginx gateway + adminer on one network |
 | `backend/router.php` | Front-controller router used by `php -S` |
 | `backend/bootstrap/app.php` | Middleware, rate limit, JSON error envelope |
 | `frontend/vite.config.ts` | Dev server and `/api` proxy |
